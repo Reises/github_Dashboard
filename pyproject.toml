@@ -1,0 +1,11 @@
+[project]
+name = "github-dashboard"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dash>=3.2.0",
+    "dash-uploader>=0.6.1",
+    "pandas>=2.3.3",
+]
