@@ -44,7 +44,7 @@ cd path/to/repo
 
 2.CSVファイルを作成
 echo "date,detail" > log.csv
-git log --encoding=sjis --pretty=format:"%ad,%s" --date=short >> log.csv
+git log --date=short --pretty=format:"%ad,%s" > log.csv
 
 3.アプリを起動
 python app.py
@@ -68,7 +68,6 @@ detail 列はコミットメッセージ
 ---
 
 ## 今後の改善 / TODO
-- 月別集計グラフを追加
 - フィルター機能（期間指定やキーワード検索）
 - テーブルやグラフのスタイル改善
 
