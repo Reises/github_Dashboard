@@ -26,6 +26,18 @@ app.layout = html.Div(
             filetypes=["csv"],
         ),
 
+        # アップロードされたファイルのパスを保存するためのStore
+        dcc.Store(id="stored-file-path"),
+
+        html.Div(
+            dcc.DatePickerRange(
+                id="date-picker",
+                start_date=None,
+                end_date=None,
+                clearable=True,
+            )
+        ),
+
         html.Hr(),
 
         # アップロード後にテーブルを表示する場所
@@ -42,24 +54,35 @@ app.layout = html.Div(
 
 # アップロード完了後の処理
 @du.callback(
+    Output("stored-file-path", "data"),
+    id="dash-uploader"  # du.Uploadのidと一致させる
+)
+
+# 直前のデコレータで呼ばれている。一致するid（du.uploader)つまりファイルがアップロードされたらファイルのパスをリスト形式で引数filenamesに渡される
+def uploaded_file(filenames):
+    """
+    filenames:アップロードされたファイルパスのリスト
+    """
+    if not filenames:
+        return None
+    return filenames[0] # 最初の1つだけ使う
+
+@app.callback(
     output=[
         Output("table-area", "children"),
         Output("graph-area", "children"),
         Output("month-area", "children"),
     ],
-    id="dash-uploader",  # du.Uploadのidと一致させる
+    inputs = [
+        Input("stored-file-path", "data"),  # アップロードされたファイルのパス,ここでInputしないと直後の関数の引数として渡せない
+        Input("date-picker", "start_date"),
+        Input("date-picker", "end_date")
+    ],
 )
-# 直前のデコレータで呼ばれている。一致するid（du.uploader)つまりファイルがアップロードされたらファイルのパスをリスト形式で引数filenamesに渡される
-def display_uploaded_file(filenames):
-    """
-    filenames:アップロードされたファイルパスのリスト
-    """
 
-    if not filenames:
+def update_table_graphs(filepath, start_date, end_date):
+    if not filepath:
         return html.Div("ファイルがアップロードされていません。")
-    
-    # 最初の1つだけ使う
-    filepath = filenames[0]
 
     # CSV読み込み
     try:
@@ -69,6 +92,13 @@ def display_uploaded_file(filenames):
 
     # datetime変換
     df['date'] = pd.to_datetime(df['date'])
+
+    # 日付範囲指定
+    if start_date and end_date:
+        df = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
+
+    if df.empty:
+        return html.Div("指定された期間のデータはありません。"), html.Div(), html.Div() # html.Div()を3つ返すのは、outputの数と一致させる必要があるため
 
     # 曜日列
     df['weekday'] = df['date'].map(lambda x: weekday_names[x.weekday()])
@@ -87,7 +117,6 @@ def display_uploaded_file(filenames):
         page_size=10,
         style_table={"overflowX": "auto"}
     ),dcc.Graph(figure=px.bar(x=weekday_counts.index, y=weekday_counts.values, title="コミット曜日毎の集計")),dcc.Graph(figure=px.bar(x=month_counts.index, y=month_counts.values, title="コミット月毎の集計"))
-
 
 if __name__ == "__main__":
     app.run(debug=True)
